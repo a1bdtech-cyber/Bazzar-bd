@@ -1,0 +1,6 @@
+{
+  "name": "Bishwas Bazar (বিশ্বাস বাজার)",
+  "description": "বিশ্বাসের সাথে কেনাকাটা — Bangladeshi multi-vendor e-commerce marketplace featuring authentic local shops, verified campaigns, and seamless shopping.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
