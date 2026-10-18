@@ -7,6 +7,8 @@ import { CATEGORIES, CATEGORY_SEGMENTS } from '../data/mockData';
 export const ProductGrid: React.FC = () => {
   const { 
     products, 
+    isLoadingProducts,
+    productsError,
     activeCategory, 
     setActiveCategory, 
     activeSegment,
@@ -201,8 +203,19 @@ export const ProductGrid: React.FC = () => {
         </div>
       )}
 
-      {/* Product Cards Grid */}
-      {filtered.length > 0 ? (
+      {/* Loading Skeletons */}
+      {isLoadingProducts ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 mt-6">
+          {Array.from({ length: 8 }).map((_, idx) => (
+            <div key={idx} className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 animate-pulse space-y-3">
+              <div className="aspect-square w-full bg-slate-200 rounded-xl"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+              <div className="h-4 bg-slate-200 rounded w-4/5"></div>
+              <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 mt-6">
           {filtered.map((product) => (
             <ProductCard key={product.id} product={product} />
@@ -218,7 +231,7 @@ export const ProductGrid: React.FC = () => {
           </p>
           <button
             onClick={() => {
-              setActiveCategory(null);
+              resetCategoryFilters();
               setSearchQuery('');
               setInStockOnly(false);
               setMaxPrice(5000);
