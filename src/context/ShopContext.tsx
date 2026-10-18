@@ -1,33 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  Product, 
-  ProductVariant, 
-  CartItem, 
-  UserProfile, 
-  UserRole, 
-  Order, 
-  VendorShop, 
-  MainCategorySegment 
-} from '../types';
+import { Product, ProductVariant, CartItem, UserProfile, UserRole, Order, VendorShop } from '../types';
 import { PRODUCTS, VENDORS, LOCALIZED_STRINGS } from '../data/mockData';
-import { 
-  auth, 
-  googleProvider, 
-  testFirestoreConnection 
-} from '../firebase';
-import { 
-  signInWithPopup, 
-  signOut as fbSignOut, 
-  onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { 
-  subscribeToProducts, 
-  seedInitialFirestoreData, 
-  saveOrderToFirestore,
-  saveUserProfileToFirestore,
-  getUserProfileFromFirestore
-} from '../services/firestoreService';
 
 interface Coupon {
   code: string;
@@ -44,13 +17,6 @@ const AVAILABLE_COUPONS: Record<string, Coupon> = {
 
 interface ShopContextType {
   products: Product[];
-  isLoadingProducts: boolean;
-  productsError: string | null;
-  isFirebaseConnected: boolean;
-  isAuthReady: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOutUser: () => Promise<void>;
-
   cart: CartItem[];
   addToCart: (product: Product, variant?: ProductVariant, quantity?: number) => void;
   removeFromCart: (cartItemId: string) => void;
@@ -81,8 +47,8 @@ interface ShopContextType {
   activeCategory: string | null;
   setActiveCategory: (catId: string | null) => void;
   
-  activeSegment: MainCategorySegment | null;
-  setActiveSegment: (segment: MainCategorySegment | null) => void;
+  activeSegment: 'men' | 'women' | 'others' | null;
+  setActiveSegment: (segment: 'men' | 'women' | 'others' | null) => void;
   activeSubcategory: string | null;
   setActiveSubcategory: (subId: string | null) => void;
   resetCategoryFilters: () => void;
@@ -112,7 +78,7 @@ interface ShopContextType {
   
   // Orders
   orders: Order[];
-  placeOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'orderStatus'>) => Promise<Order>;
+  placeOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'orderStatus'>) => Order;
   selectedOrder: Order | null;
   setSelectedOrder: (order: Order | null) => void;
 
@@ -148,13 +114,9 @@ const DEFAULT_USER: UserProfile = {
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [productsError, setProductsError] = useState<string | null>(null);
-  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-
+  const [products] = useState<Product[]>(PRODUCTS);
   const [cart, setCart] = useState<CartItem[]>(() => {
+    // initialize with 1 item for quick preview
     const sample = PRODUCTS[0];
     return [
       {
@@ -173,11 +135,27 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [wishlist, setWishlist] = useState<string[]>(['prod-002']);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeSegment, setActiveSegmentState] = useState<MainCategorySegment | null>(null);
+  const [activeSegment, setActiveSegmentState] = useState<'men' | 'women' | 'others' | null>(null);
   const [activeSubcategory, setActiveSubcategoryState] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high' | 'rating' | 'discount'>('relevance');
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER);
+
+  const setActiveSegment = (segment: 'men' | 'women' | 'others' | null) => {
+    setActiveSegmentState(segment);
+    setActiveSubcategoryState(null);
+    setActiveCategory(null);
+  };
+
+  const setActiveSubcategory = (subId: string | null) => {
+    setActiveSubcategoryState(subId);
+  };
+
+  const resetCategoryFilters = () => {
+    setActiveSegmentState(null);
+    setActiveSubcategoryState(null);
+    setActiveCategory(null);
+  };
   
   // Modals
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -227,120 +205,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 3500);
   };
 
-  // 1. Initial Firestore Connection & Products Subscription
-  useEffect(() => {
-    let unsubscribeProducts: (() => void) | undefined;
-
-    async function initFirebaseData() {
-      setIsLoadingProducts(true);
-      const isOnline = await testFirestoreConnection();
-      setIsFirebaseConnected(isOnline);
-
-      if (isOnline) {
-        // Seed baseline products to Cloud Firestore if empty
-        await seedInitialFirestoreData();
-
-        // Listen for live Firestore product changes
-        unsubscribeProducts = subscribeToProducts(
-          (liveProducts) => {
-            setProducts(liveProducts);
-            setIsLoadingProducts(false);
-            setProductsError(null);
-          },
-          (err) => {
-            console.warn('Real-time listener notice:', err);
-            setProductsError('ফায়ারস্টোর থেকে সরাসরি পণ্য লোড করা হচ্ছে...');
-            setIsLoadingProducts(false);
-          }
-        );
-      } else {
-        // Fallback to local products
-        setProducts(PRODUCTS);
-        setIsLoadingProducts(false);
-      }
-    }
-
-    initFirebaseData();
-
-    return () => {
-      if (unsubscribeProducts) unsubscribeProducts();
-    };
-  }, []);
-
-  // 2. Firebase Authentication State Listener
-  useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
-      setIsAuthReady(true);
-      if (fbUser) {
-        const isSuperAdminEmail = fbUser.email === 'iamakhinoor@gmail.com';
-        try {
-          const profile = await getUserProfileFromFirestore(fbUser.uid);
-          if (profile) {
-            if (isSuperAdminEmail && profile.role !== 'super_admin') {
-              profile.role = 'super_admin';
-            }
-            setCurrentUser(profile);
-          } else {
-            const newProfile: UserProfile = {
-              id: fbUser.uid,
-              name: fbUser.displayName || 'সম্মানিত ক্রেতা',
-              email: fbUser.email || '',
-              phone: fbUser.phoneNumber || '01XXXXXXXXX',
-              role: isSuperAdminEmail ? 'super_admin' : 'customer',
-              isVerified: fbUser.emailVerified || isSuperAdminEmail,
-              avatarUrl: fbUser.photoURL || undefined,
-              savedAddresses: [],
-              createdAt: new Date().toISOString()
-            };
-            await saveUserProfileToFirestore(newProfile);
-            setCurrentUser(newProfile);
-          }
-          showToast(`স্বাগতম, ${fbUser.displayName || fbUser.email}!`);
-        } catch (e) {
-          console.warn('Profile read/save notice:', e);
-        }
-      }
-    });
-
-    return () => unsubscribeAuth();
-  }, []);
-
-  const signInWithGoogle = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-      setIsAuthModalOpen(false);
-    } catch (error: any) {
-      console.error('Google Sign-In Error:', error);
-      showToast(error.message || 'গুগল সাইন-ইন সম্পন্ন করা সম্ভব হয়নি');
-    }
-  };
-
-  const signOutUser = async () => {
-    try {
-      await fbSignOut(auth);
-      switchRole('guest');
-      showToast('সফলভাবে লগআউট করা হয়েছে');
-    } catch (error: any) {
-      console.error('Sign out error:', error);
-    }
-  };
-
-  const setActiveSegment = (segment: MainCategorySegment | null) => {
-    setActiveSegmentState(segment);
-    setActiveSubcategoryState(null);
-    setActiveCategory(null);
-  };
-
-  const setActiveSubcategory = (subId: string | null) => {
-    setActiveSubcategoryState(subId);
-  };
-
-  const resetCategoryFilters = () => {
-    setActiveSegmentState(null);
-    setActiveSubcategoryState(null);
-    setActiveCategory(null);
-  };
-
   const switchRole = (role: UserRole) => {
     if (role === 'guest') {
       setCurrentUser({
@@ -369,16 +233,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('বিক্রেতা মোড চালু হয়েছে (দোকান: সিল্ক ও তাঁত ঘর)');
     } else if (role === 'super_admin') {
       setCurrentUser({
-        id: auth.currentUser?.uid || 'usr-admin-01',
-        name: auth.currentUser?.displayName || 'প্রধান সিস্টেম অ্যাডমিন',
-        email: auth.currentUser?.email || 'iamakhinoor@gmail.com',
+        id: 'usr-admin-01',
+        name: 'প্রধান সিস্টেম অ্যাডমিন',
+        email: 'admin@bishwasbazar.com',
         phone: '01700-000000',
         role: 'super_admin',
         isVerified: true,
         savedAddresses: [],
         createdAt: '2025-01-01'
       });
-      showToast('সুপার অ্যাডমিন মোড সক্রিয় হয়েছে (iamakhinoor@gmail.com)');
+      showToast('সুপার অ্যাডমিন মোড সক্রিয় হয়েছে');
     } else {
       setCurrentUser(DEFAULT_USER);
       showToast('রেজিস্টার্ড ক্রেতা মোড সক্রিয় হয়েছে');
@@ -386,6 +250,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addToCart = (product: Product, variant?: ProductVariant, quantity: number = 1) => {
+    // Check available stock
     const availableStock = variant ? variant.stock : product.stock;
     if (availableStock <= 0) {
       showToast('দুঃখিত, পণ্যটি বর্তমানে স্টকে নেই!');
@@ -464,7 +329,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const currentSubtotal = cart.reduce((sum, item) => {
-      const price = item.selectedVariant?.salePrice || item.selectedVariant?.price || item.product.salePrice || item.product.regularPrice;
+      const price = item.selectedVariant?.salePrice || item.selectedVariant?.price || item.product?.salePrice || item.product?.regularPrice || 0;
       return sum + (price * item.quantity);
     }, 0);
 
@@ -499,7 +364,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => {
-    const price = item.selectedVariant?.salePrice || item.selectedVariant?.price || item.product.salePrice || item.product.regularPrice;
+    const price = item.selectedVariant?.salePrice || item.selectedVariant?.price || item.product?.salePrice || item.product?.regularPrice || 0;
     return sum + (price * item.quantity);
   }, 0);
 
@@ -514,7 +379,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const total = Math.max(0, subtotal + deliveryFee - discount);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const placeOrder = async (orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'orderStatus'>): Promise<Order> => {
+  const placeOrder = (orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'orderStatus'>): Order => {
     const newOrder: Order = {
       ...orderData,
       id: `ord-${Date.now()}`,
@@ -529,20 +394,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       orderStatus: 'pending_confirmation'
     };
 
-    // Save to state
     setOrders(prev => [newOrder, ...prev]);
     clearCart();
     setAppliedCoupon(null);
     setSelectedOrder(newOrder);
-
-    // Save to Firestore Database
-    try {
-      await saveOrderToFirestore(newOrder);
-      console.log('Order successfully synced to Firestore:', newOrder.id);
-    } catch (e) {
-      console.warn('Firestore order sync notice (auth required for restricted rules):', e);
-    }
-
     showToast(`অর্ডার সম্পন্ন হয়েছে! অর্ডার নং: ${newOrder.orderNumber}`);
     return newOrder;
   };
@@ -551,12 +406,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <ShopContext.Provider
       value={{
         products,
-        isLoadingProducts,
-        productsError,
-        isFirebaseConnected,
-        isAuthReady,
-        signInWithGoogle,
-        signOutUser,
         cart,
         addToCart,
         removeFromCart,

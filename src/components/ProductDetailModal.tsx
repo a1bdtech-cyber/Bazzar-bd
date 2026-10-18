@@ -20,48 +20,48 @@ import { useShop } from '../context/ShopContext';
 import { ProductVariant } from '../types';
 import { REVIEWS, VENDORS, LOCALIZED_STRINGS } from '../data/mockData';
 
-export const ProductDetailModal: React.FC = () => {
+interface ProductDetailContentProps {
+  product: NonNullable<ReturnType<typeof useShop>['selectedProduct']>;
+  onClose: () => void;
+}
+
+const ProductDetailContent: React.FC<ProductDetailContentProps> = ({ product, onClose }) => {
   const { 
-    selectedProduct, 
-    setSelectedProduct, 
     addToCart, 
     wishlist, 
     toggleWishlist,
-    setIsCartOpen,
     setIsCheckoutModalOpen,
     setActiveVendorStore
   } = useShop();
 
-  if (!selectedProduct) return null;
-
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
-    selectedProduct.variants && selectedProduct.variants.length > 0 ? selectedProduct.variants[0] : undefined
+    product.variants && product.variants.length > 0 ? product.variants[0] : undefined
   );
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'reviews'>('desc');
   const [deliveryLocation, setDeliveryLocation] = useState<'dhaka' | 'outside'>('dhaka');
 
-  const isWishlisted = wishlist.includes(selectedProduct.id);
-  const currentPrice = selectedVariant?.salePrice || selectedVariant?.price || selectedProduct.salePrice || selectedProduct.regularPrice;
-  const originalPrice = selectedVariant?.price || selectedProduct.regularPrice;
-  const currentStock = selectedVariant ? selectedVariant.stock : selectedProduct.stock;
+  const isWishlisted = wishlist.includes(product.id);
+  const currentPrice = selectedVariant?.salePrice || selectedVariant?.price || product.salePrice || product.regularPrice;
+  const originalPrice = selectedVariant?.price || product.regularPrice;
+  const currentStock = selectedVariant ? selectedVariant.stock : product.stock;
   
   const discountPercent = originalPrice > currentPrice
     ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
     : 0;
 
-  const productReviews = REVIEWS.filter(r => r.productId === selectedProduct.id);
-  const vendorObj = VENDORS.find(v => v.id === selectedProduct.vendorId);
+  const productReviews = REVIEWS.filter(r => r.productId === product.id);
+  const vendorObj = VENDORS.find(v => v.id === product.vendorId);
 
   const handleBuyNow = () => {
-    addToCart(selectedProduct, selectedVariant, quantity);
-    setSelectedProduct(null);
+    addToCart(product, selectedVariant, quantity);
+    onClose();
     setIsCheckoutModalOpen(true);
   };
 
   const handleAddToCart = () => {
-    addToCart(selectedProduct, selectedVariant, quantity);
+    addToCart(product, selectedVariant, quantity);
   };
 
   return (
@@ -72,7 +72,7 @@ export const ProductDetailModal: React.FC = () => {
         
         {/* Close Button */}
         <button
-          onClick={() => setSelectedProduct(null)}
+          onClick={onClose}
           className="absolute right-3 top-3 z-20 p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
           aria-label="বন্ধ করুন"
         >
@@ -85,8 +85,8 @@ export const ProductDetailModal: React.FC = () => {
           <div className="space-y-3">
             <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-xs">
               <img
-                src={selectedProduct.images[activeImageIdx] || selectedProduct.images[0]}
-                alt={selectedProduct.titleBn}
+                src={product.images[activeImageIdx] || product.images[0]}
+                alt={product.titleBn}
                 className="w-full h-full object-cover"
               />
               {discountPercent > 0 && (
@@ -95,7 +95,7 @@ export const ProductDetailModal: React.FC = () => {
                 </div>
               )}
               <button
-                onClick={() => toggleWishlist(selectedProduct.id)}
+                onClick={() => toggleWishlist(product.id)}
                 className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white text-slate-700 rounded-full shadow-xs"
               >
                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-rose-600 text-rose-600' : ''}`} />
@@ -103,9 +103,9 @@ export const ProductDetailModal: React.FC = () => {
             </div>
 
             {/* Thumbnail selector if multiple images */}
-            {selectedProduct.images.length > 1 && (
+            {product.images.length > 1 && (
               <div className="flex gap-2">
-                {selectedProduct.images.map((img, i) => (
+                {product.images.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setActiveImageIdx(i)}
@@ -135,7 +135,7 @@ export const ProductDetailModal: React.FC = () => {
 
                 <button
                   onClick={() => {
-                    setSelectedProduct(null);
+                    onClose();
                     setActiveVendorStore(vendorObj);
                   }}
                   className="px-3 py-1.5 bg-white hover:bg-teal-700 hover:text-white text-teal-800 text-xs font-semibold rounded-xl border border-teal-200 transition-colors shrink-0"
@@ -151,7 +151,7 @@ export const ProductDetailModal: React.FC = () => {
             
             {/* Category & Verified Badge */}
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
-              <span className="font-medium text-teal-800">{selectedProduct.categoryNameBn}</span>
+              <span className="font-medium text-teal-800">{product.categoryNameBn}</span>
               <span>•</span>
               <span className="flex items-center gap-1 text-emerald-700 font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" /> ভেরিফাইড বিক্রেতা
@@ -160,22 +160,22 @@ export const ProductDetailModal: React.FC = () => {
 
             {/* Product Title */}
             <h1 className="text-lg sm:text-2xl font-bold text-slate-900 leading-snug font-['Hind_Siliguri']">
-              {selectedProduct.titleBn}
+              {product.titleBn}
             </h1>
 
             {/* Rating Summary */}
             <div className="flex items-center gap-3 mt-2 text-xs">
               <div className="flex items-center gap-1 text-amber-500">
                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="font-bold text-slate-800 text-sm">{selectedProduct.rating.toLocaleString('bn-BD')}</span>
+                <span className="font-bold text-slate-800 text-sm">{product.rating.toLocaleString('bn-BD')}</span>
               </div>
               <span className="text-slate-300">•</span>
               <span className="text-slate-500">
-                {selectedProduct.reviewCount.toLocaleString('bn-BD')} টি গ্রাহক রিভিউ
+                {product.reviewCount.toLocaleString('bn-BD')} টি গ্রাহক রিভিউ
               </span>
               <span className="text-slate-300">•</span>
               <span className="text-teal-700 font-medium">
-                {selectedProduct.soldCount.toLocaleString('bn-BD')}+ সফল ডেলিভারি
+                {product.soldCount.toLocaleString('bn-BD')}+ সফল ডেলিভারি
               </span>
             </div>
 
@@ -206,13 +206,13 @@ export const ProductDetailModal: React.FC = () => {
             </div>
 
             {/* Variant Selector (e.g. Size, Color) */}
-            {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+            {product.variants && product.variants.length > 0 && (
               <div className="mt-4">
                 <label className="text-xs font-bold text-slate-700 block mb-1.5">
                   ভ্যারিয়েন্ট নির্বাচন করুন:
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {selectedProduct.variants.map((v) => {
+                  {product.variants.map((v) => {
                     const isSelected = selectedVariant?.id === v.id;
                     return (
                       <button
@@ -290,10 +290,10 @@ export const ProductDetailModal: React.FC = () => {
               </p>
               <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1 border-t border-teal-100">
                 <span className="flex items-center gap-1">
-                  <RotateCcw className="w-3.5 h-3.5 text-emerald-600" /> {selectedProduct.returnPolicyDays} দিনের সহজ রিটার্ন
+                  <RotateCcw className="w-3.5 h-3.5 text-emerald-600" /> {product.returnPolicyDays} দিনের সহজ রিটার্ন
                 </span>
                 <span className="flex items-center gap-1">
-                  <ShieldAlert className="w-3.5 h-3.5 text-teal-600" /> {selectedProduct.warranty || 'আসল পণ্যের নিশ্চয়তা'}
+                  <ShieldAlert className="w-3.5 h-3.5 text-teal-600" /> {product.warranty || 'আসল পণ্যের নিশ্চয়তা'}
                 </span>
               </div>
             </div>
@@ -354,13 +354,13 @@ export const ProductDetailModal: React.FC = () => {
           <div className="py-4 text-xs sm:text-sm">
             {activeTab === 'desc' && (
               <p className="text-slate-600 leading-relaxed whitespace-pre-line">
-                {selectedProduct.descriptionBn}
+                {product.descriptionBn}
               </p>
             )}
 
             {activeTab === 'specs' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {Object.entries(selectedProduct.specifications).map(([key, value]) => (
+                {Object.entries(product.specifications).map(([key, value]) => (
                   <div key={key} className="flex justify-between p-2.5 bg-white rounded-xl border border-slate-200">
                     <span className="font-semibold text-slate-500">{key}:</span>
                     <span className="text-slate-800 font-medium">{value}</span>
@@ -405,5 +405,19 @@ export const ProductDetailModal: React.FC = () => {
 
       </div>
     </div>
+  );
+};
+
+export const ProductDetailModal: React.FC = () => {
+  const { selectedProduct, setSelectedProduct } = useShop();
+
+  if (!selectedProduct) return null;
+
+  return (
+    <ProductDetailContent
+      key={selectedProduct.id}
+      product={selectedProduct}
+      onClose={() => setSelectedProduct(null)}
+    />
   );
 };

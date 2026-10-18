@@ -14,9 +14,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isFlash = fal
     addToCart, 
     wishlist, 
     toggleWishlist,
-    setActiveVendorStore,
-    VENDORS
-  } = useShop() as any;
+    setActiveVendorStore
+  } = useShop();
 
   const isWishlisted = wishlist.includes(product.id);
 

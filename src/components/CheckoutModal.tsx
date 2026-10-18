@@ -16,10 +16,8 @@ import { useShop } from '../context/ShopContext';
 import { BANGLADESH_DIVISIONS } from '../data/mockData';
 import { Address } from '../types';
 
-export const CheckoutModal: React.FC = () => {
+const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { 
-    isCheckoutModalOpen, 
-    setIsCheckoutModalOpen, 
     cart, 
     totals, 
     deliveryZone, 
@@ -28,8 +26,6 @@ export const CheckoutModal: React.FC = () => {
     placeOrder,
     setSelectedOrder
   } = useShop();
-
-  if (!isCheckoutModalOpen) return null;
 
   const defaultAddr = currentUser.savedAddresses[0] || {
     id: 'addr-temp',
@@ -110,7 +106,7 @@ export const CheckoutModal: React.FC = () => {
       });
 
       setIsSubmitting(false);
-      setIsCheckoutModalOpen(false);
+      onClose();
       setSelectedOrder(createdOrder);
     }, 700);
   };
@@ -132,7 +128,7 @@ export const CheckoutModal: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => setIsCheckoutModalOpen(false)}
+            onClick={onClose}
             className="p-1.5 rounded-full hover:bg-teal-800 text-teal-200 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
@@ -372,3 +368,12 @@ export const CheckoutModal: React.FC = () => {
     </div>
   );
 };
+
+export const CheckoutModal: React.FC = () => {
+  const { isCheckoutModalOpen, setIsCheckoutModalOpen } = useShop();
+
+  if (!isCheckoutModalOpen) return null;
+
+  return <CheckoutModalContent onClose={() => setIsCheckoutModalOpen(false)} />;
+};
+
