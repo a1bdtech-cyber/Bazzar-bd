@@ -11,6 +11,7 @@ import {
   GitBranch, 
   ExternalLink 
 } from 'lucide-react';
+import { useShop } from '../context/ShopContext';
 
 interface ArchitectureModalProps {
   isOpen: boolean;
@@ -18,9 +19,11 @@ interface ArchitectureModalProps {
 }
 
 export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, onClose }) => {
+  const { currentUser } = useShop();
   const [tab, setTab] = useState<'arch' | 'folders' | 'journeys' | 'firestore' | 'checklist'>('arch');
 
-  if (!isOpen) return null;
+  // Hard gate: strictly invisible unless user is authenticated super admin
+  if (!isOpen || currentUser.role !== 'super_admin') return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">

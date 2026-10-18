@@ -6,6 +6,7 @@ import {
   User, 
   Store, 
   ShieldCheck, 
+  Lock,
   PhoneCall, 
   Menu, 
   X, 
@@ -115,37 +116,49 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-white shadow-xs border-b border-slate-200">
-      {/* Top Banner with Phase 1 testing info & Trust Badges */}
-      <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-emerald-900 text-teal-50 text-xs py-1.5 px-3 sm:px-6">
+      {/* Top Banner with Trust Badges & Language Selector */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-teal-950 text-slate-200 text-xs py-1.5 px-3 sm:px-6 border-b border-slate-800">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 font-medium px-2 py-0.5 rounded-full border border-amber-400/30 text-[11px]">
-              <Sparkles className="w-3 h-3 text-amber-400" /> ফেজ ১: ক্যাটাগরি মেনু (ম্যান, ওম্যান, অন্যান্য)
-            </span>
-            <span className="hidden md:inline-flex items-center gap-1 text-teal-100">
-              <CheckCircle2 className="w-3 h-3 text-teal-300" /> সারাদেশে দ্রুত ক্যাশ অন ডেলিভারি ও সুরক্ষিত পেমেন্ট
+            {currentUser.role === 'super_admin' ? (
+              <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 font-medium px-2 py-0.5 rounded-full border border-amber-400/30 text-[11px]">
+                <Sparkles className="w-3 h-3 text-amber-400" /> অ্যাডমিন মোড: BishwashBazzar BD
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-emerald-400 font-medium text-[11px]">
+                <Sparkles className="w-3 h-3 text-emerald-400" /> Better Products. Better Life.
+              </span>
+            )}
+            <span className="hidden md:inline-flex items-center gap-1 text-slate-300 text-[11px]">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" /> দেশজুড়ে দ্রুত ক্যাশ অন ডেলিভারি (COD)
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-[12px]">
-            <a href="tel:16778" className="inline-flex items-center gap-1 text-teal-200 hover:text-white transition-colors">
-              <PhoneCall className="w-3 h-3" /> হেল্পলাইন: ১৬৭৭৮
+          <div className="flex items-center gap-3 sm:gap-4 text-[12px]">
+            {/* Language Switcher */}
+            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-300 bg-white/10 px-2 py-0.5 rounded-md border border-white/10">
+              <span className="font-bold text-emerald-400">বাং</span>
+              <span className="text-slate-500">/</span>
+              <span className="text-slate-400 hover:text-white cursor-pointer">EN</span>
+            </div>
+
+            <a href="tel:16778" className="inline-flex items-center gap-1 text-slate-300 hover:text-white transition-colors">
+              <PhoneCall className="w-3 h-3 text-emerald-400" /> ১৬৭৭৮
             </a>
             
-            {/* Quick Role Switcher for MVP Testing */}
-            <div className="relative inline-block text-left">
-              <select 
-                value={currentUser.role}
-                onChange={(e) => switchRole(e.target.value as UserRole)}
-                className="bg-teal-950/70 text-teal-200 text-xs rounded border border-teal-700/60 py-0.5 px-2 focus:outline-hidden cursor-pointer"
-                title="ভূমিকা পরিবর্তন করুন"
-              >
-                <option value="customer">ক্রেতা (Customer)</option>
-                <option value="approved_vendor">বিক্রেতা (Vendor)</option>
-                <option value="super_admin">অ্যাডমিন (Admin)</option>
-                <option value="guest">অতিথি (Guest)</option>
-              </select>
-            </div>
+            {/* Super Admin Status & Portal Access (ONLY visible to Super Admin) */}
+            {currentUser.role === 'super_admin' && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setIsAdminModalOpen(true)}
+                  className="inline-flex items-center gap-1 bg-amber-400 text-slate-900 font-semibold px-2.5 py-0.5 rounded-full text-[11px] shadow-xs hover:bg-amber-300 transition-colors"
+                  title="সুপার অ্যাডমিন ড্যাশবোর্ড খুলুন"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-900" />
+                  সুপার অ্যাডমিন (iamakhinoor)
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -163,24 +176,24 @@ export const Header: React.FC = () => {
             {isMobileMenuOpen ? <X className="w-6 h-6 text-teal-800" /> : <Menu className="w-6 h-6 text-slate-800" />}
           </button>
 
-          {/* Original Brand Logo */}
+          {/* BishwashBazzar BD Brand Logo */}
           <a 
             href="#" 
             onClick={(e) => { e.preventDefault(); resetCategoryFilters(); setSearchQuery(''); }}
             className="flex items-center gap-2.5 shrink-0 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-700 to-teal-600 flex items-center justify-center text-white shadow-sm ring-2 ring-teal-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-950 via-teal-900 to-emerald-600 flex items-center justify-center text-white shadow-md ring-2 ring-emerald-500/20 group-hover:scale-105 transition-transform">
               <div className="relative">
-                <Store className="w-5 h-5 text-amber-300" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400"></span>
+                <Store className="w-5 h-5 text-emerald-300" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400"></span>
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl sm:text-2xl font-bold tracking-tight text-teal-900 leading-none flex items-center gap-1 font-['Hind_Siliguri']">
-                বিশ্বাস <span className="text-orange-600">বাজার</span>
+              <span className="text-lg sm:text-2xl font-extrabold tracking-tight text-slate-950 leading-none flex items-center gap-1 font-['Plus_Jakarta_Sans',sans-serif]">
+                BishwashBazzar <span className="text-emerald-600 font-extrabold">BD</span>
               </span>
-              <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium tracking-wide">
-                {LOCALIZED_STRINGS.appTagline}
+              <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium tracking-wide font-['Hind_Siliguri']">
+                বিশ্বাস বাজার · Better Products. Better Life.
               </span>
             </div>
           </a>
@@ -349,15 +362,17 @@ export const Header: React.FC = () => {
               <span>বিক্রেতা কর্নার</span>
             </button>
 
-            {/* Admin Portal Link */}
-            <button
-              onClick={() => setIsAdminModalOpen(true)}
-              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors"
-              title="প্রশাসনিক লগইন পোর্টাল"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-600" />
-              <span>অ্যাডমিন</span>
-            </button>
+            {/* Admin Portal Link — ONLY visible to super_admin */}
+            {currentUser.role === 'super_admin' && (
+              <button
+                onClick={() => setIsAdminModalOpen(true)}
+                className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg transition-colors"
+                title="প্রশাসনিক পোর্টাল"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                <span>সুপার অ্যাডমিন</span>
+              </button>
+            )}
 
             {/* Wishlist Button */}
             <button
@@ -470,12 +485,17 @@ export const Header: React.FC = () => {
                     >
                       <Store className="w-4 h-4 text-amber-600" /> বিক্রেতা হাব ও আবেদন
                     </button>
-                    <button
-                      onClick={() => { setIsAdminModalOpen(true); setIsUserMenuOpen(false); }}
-                      className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                    >
-                      <ShieldCheck className="w-4 h-4 text-slate-600" /> প্রশাসনিক নিয়ন্ত্রণ প্যানেল
-                    </button>
+                    {currentUser.role === 'super_admin' && (
+                      <button
+                        onClick={() => { setIsAdminModalOpen(true); setIsUserMenuOpen(false); }}
+                        className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-amber-600" /> প্রশাসনিক নিয়ন্ত্রণ প্যানেল
+                        </span>
+                        <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-sm font-semibold">ওনার</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -597,12 +617,14 @@ export const Header: React.FC = () => {
             >
               <Store className="w-4 h-4" /> বিক্রেতা হিসেবে যুক্ত হোন / পোর্টাল
             </button>
-            <button
-              onClick={() => { setIsAdminModalOpen(true); setIsMobileMenuOpen(false); }}
-              className="w-full py-2 px-3 text-xs font-semibold text-slate-700 bg-slate-100 rounded-lg flex items-center justify-center gap-2"
-            >
-              <ShieldCheck className="w-4 h-4" /> প্রশাসনিক অ্যাডমিন ড্যাশবোর্ড
-            </button>
+            {currentUser.role === 'super_admin' && (
+              <button
+                onClick={() => { setIsAdminModalOpen(true); setIsMobileMenuOpen(false); }}
+                className="w-full py-2 px-3 text-xs font-semibold text-slate-700 bg-slate-100 rounded-lg flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4" /> প্রশাসনিক অ্যাডমিন ড্যাশবোর্ড
+              </button>
+            )}
           </div>
         </div>
       )}

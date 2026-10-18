@@ -192,7 +192,7 @@ export interface Order {
   discountAmount: number;
   couponCode?: string;
   totalPayable: number;
-  paymentMethod: 'cash_on_delivery' | 'bkash_sandbox' | 'nagad_sandbox' | 'card_sandbox';
+  paymentMethod: 'cash_on_delivery' | 'bkash_sandbox' | 'nagad_sandbox' | 'rocket_sandbox' | 'upay_sandbox' | 'card_sandbox';
   paymentStatus: 'unpaid' | 'paid' | 'refunded' | 'failed';
   orderStatus: OrderStatus;
   orderDate: string;

@@ -9,13 +9,15 @@ import {
   MapPin, 
   Store, 
   ChevronRight,
-  Info
+  Info,
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { BANGLADESH_DIVISIONS } from '../data/mockData';
 
 export const Footer: React.FC = () => {
-  const { setActiveCategory, setIsVendorModalOpen, setIsAdminModalOpen } = useShop();
+  const { setActiveCategory, setIsVendorModalOpen, setIsAdminModalOpen, currentUser } = useShop();
   const [activePolicyModal, setActivePolicyModal] = useState<string | null>(null);
 
   const policyContent: Record<string, { title: string; content: string }> = {
@@ -137,11 +139,13 @@ export const Footer: React.FC = () => {
                   বিক্রেতা হিসেবে যোগ দিন
                 </button>
               </li>
-              <li>
-                <button onClick={() => setIsAdminModalOpen(true)} className="hover:text-white transition-colors">
-                  প্রশাসনিক পোর্টাল (অ্যাডমিন)
-                </button>
-              </li>
+              {currentUser.role === 'super_admin' && (
+                <li>
+                  <button onClick={() => setIsAdminModalOpen(true)} className="text-amber-400 hover:text-amber-300 font-semibold transition-colors">
+                    প্রশাসনিক পোর্টাল (সুপার অ্যাডমিন)
+                  </button>
+                </li>
+              )}
               <li>
                 <button onClick={() => setActivePolicyModal('vendor')} className="hover:text-white transition-colors">
                   মার্কেটপ্লেস কমিশন পলিসি
@@ -200,10 +204,19 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar & Disclaimer */}
         <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© ২০২৬ বিশ্বাস বাজার (Bishwas Bazar)। সর্বস্বত্ব সংরক্ষিত।</p>
+          <div className="flex items-center gap-2">
+            <p>© ২০২৬ বিশ্বাস বাজার (Bishwas Bazar)। সর্বস্বত্ব সংরক্ষিত।</p>
+            <button
+              onClick={() => setIsAdminModalOpen(true)}
+              className="text-slate-800 hover:text-slate-600 transition-colors p-1"
+              title="অ্যাডমিন"
+            >
+              <Lock className="w-2.5 h-2.5" />
+            </button>
+          </div>
           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            <Info className="w-3.5 h-3.5 text-amber-400" />
-            <span>ফেজ ১: আর্কিটেকচার ও ইউআই ডেমো স্টেট (রিয়েল ফায়ারবেস ইন্টিগ্রেশনের জন্য প্রস্তুত)</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+            <span>দেশজুড়ে বিশ্বস্ত ডেলিভারি ও নিরাপদ ক্যাশ অন ডেলিভারি সেবা</span>
           </div>
         </div>
 

@@ -40,7 +40,7 @@ const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
   };
 
   const [formData, setFormData] = useState<Address>(defaultAddr);
-  const [paymentMethod, setPaymentMethod] = useState<'cash_on_delivery' | 'bkash_sandbox' | 'nagad_sandbox'>('cash_on_delivery');
+  const [paymentMethod, setPaymentMethod] = useState<'cash_on_delivery' | 'bkash_sandbox' | 'nagad_sandbox' | 'rocket_sandbox' | 'upay_sandbox'>('cash_on_delivery');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -273,17 +273,17 @@ const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               <Banknote className="w-4 h-4 text-teal-700" /> ২. পেমেন্ট পদ্ধতি নির্বাচন
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               
               {/* Cash On Delivery (Default) */}
-              <label className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${paymentMethod === 'cash_on_delivery' ? 'border-teal-700 bg-teal-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
+              <label className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${paymentMethod === 'cash_on_delivery' ? 'border-emerald-600 bg-emerald-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
                 <input
                   type="radio"
                   name="paymentMethod"
                   value="cash_on_delivery"
                   checked={paymentMethod === 'cash_on_delivery'}
                   onChange={() => setPaymentMethod('cash_on_delivery')}
-                  className="mt-1 text-teal-700"
+                  className="mt-1 text-emerald-600"
                 />
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
@@ -291,13 +291,13 @@ const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                     <span>ক্যাশ অন ডেলিভারি (COD)</span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    পণ্য হাতে পেয়ে চেক করে ডেলিভারি ম্যানকে সম্পূর্ণ মূল্য পরিশোধ করুন।
+                    পণ্য হাতে পেয়ে চেক করে ডেলিভারি ম্যানকে মূল্য পরিশোধ করুন।
                   </p>
                 </div>
               </label>
 
-              {/* bKash Sandbox (Clearly labelled mock adapter per Rule 12.B) */}
-              <label className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${paymentMethod === 'bkash_sandbox' ? 'border-pink-600 bg-pink-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
+              {/* bKash */}
+              <label className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${paymentMethod === 'bkash_sandbox' ? 'border-pink-600 bg-pink-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
                 <input
                   type="radio"
                   name="paymentMethod"
@@ -309,10 +309,52 @@ const CheckoutModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) =>
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
                     <span className="w-4 h-4 rounded-full bg-pink-600 text-white text-[9px] font-bold flex items-center justify-center">b</span>
-                    <span>বিকাশ (স্যান্ডবক্স অ্যাডাপ্টার)</span>
+                    <span>বিকাশ (bKash Gateway)</span>
                   </div>
                   <p className="text-[11px] text-pink-700 mt-0.5">
-                    মক টেস্ট পেমেন্ট গেটওয়ে। প্রোডাকশন এপিআই কী পরবর্তীতে সার্ভারে যুক্ত হবে।
+                    বিকাশ মার্চেন্ট গেটওয়ে। সার্ভার-রেডি এপিআই ইন্টিগ্রেশন।
+                  </p>
+                </div>
+              </label>
+
+              {/* Nagad */}
+              <label className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${paymentMethod === 'nagad_sandbox' ? 'border-orange-600 bg-orange-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="nagad_sandbox"
+                  checked={paymentMethod === 'nagad_sandbox'}
+                  onChange={() => setPaymentMethod('nagad_sandbox')}
+                  className="mt-1 text-orange-600"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                    <span className="w-4 h-4 rounded-full bg-orange-600 text-white text-[9px] font-bold flex items-center justify-center">ন</span>
+                    <span>নগদ (Nagad Direct)</span>
+                  </div>
+                  <p className="text-[11px] text-orange-700 mt-0.5">
+                    নগদ পেমেন্ট গেটওয়ে। দ্রুত ও সুরক্ষিত মোবাইল ওয়ালেট।
+                  </p>
+                </div>
+              </label>
+
+              {/* Rocket */}
+              <label className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${paymentMethod === 'rocket_sandbox' ? 'border-purple-600 bg-purple-50/50' : 'border-slate-200 hover:border-slate-300'}`}>
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="rocket_sandbox"
+                  checked={paymentMethod === 'rocket_sandbox'}
+                  onChange={() => setPaymentMethod('rocket_sandbox')}
+                  className="mt-1 text-purple-600"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                    <span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] font-bold flex items-center justify-center">R</span>
+                    <span>রকেট (Rocket / DBBL)</span>
+                  </div>
+                  <p className="text-[11px] text-purple-700 mt-0.5">
+                    ডাচ-বাংলা ব্যাংক রকেট মোবাইল ব্যাংকিং সাপোর্ট।
                   </p>
                 </div>
               </label>

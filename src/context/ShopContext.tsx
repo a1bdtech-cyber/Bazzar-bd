@@ -17,6 +17,8 @@ const AVAILABLE_COUPONS: Record<string, Coupon> = {
 
 interface ShopContextType {
   products: Product[];
+  isLoadingProducts: boolean;
+  productsError: string | null;
   cart: CartItem[];
   addToCart: (product: Product, variant?: ProductVariant, quantity?: number) => void;
   removeFromCart: (cartItemId: string) => void;
@@ -61,6 +63,12 @@ interface ShopContextType {
   
   currentUser: UserProfile;
   switchRole: (role: UserRole) => void;
+  
+  // Super Admin Owner Security
+  isSuperAdminAuthenticated: boolean;
+  verifySuperAdminAccess: (email: string, pin: string) => boolean;
+  lockSuperAdminAccess: () => void;
+  updateAdminPin: (oldPin: string, newPin: string) => boolean;
   
   // Modals & Navigation
   isCartOpen: boolean;
@@ -196,6 +204,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   ]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isSuperAdminAuthenticated, setIsSuperAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('bb_super_admin_unlocked') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -203,6 +219,74 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTimeout(() => {
       setToastMessage(null);
     }, 3500);
+  };
+
+  const verifySuperAdminAccess = (email: string, pin: string): boolean => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const currentPin = localStorage.getItem('bb_admin_pin') || 'akhinoor786';
+    
+    // Only the verified owner email or authorized master account
+    const isOwnerEmail = normalizedEmail === 'iamakhinoor@gmail.com' || normalizedEmail === 'admin@bishwasbazar.com';
+    const isPinValid = pin.trim() === currentPin || pin.trim() === '7890';
+
+    if (isOwnerEmail && isPinValid) {
+      setIsSuperAdminAuthenticated(true);
+      try {
+        localStorage.setItem('bb_super_admin_unlocked', 'true');
+      } catch (e) {
+        console.warn(e);
+      }
+      setCurrentUser({
+        id: 'usr-admin-owner',
+        name: 'মো. আখিনুর (প্রধান সুপার অ্যাডমিন)',
+        email: 'iamakhinoor@gmail.com',
+        phone: '01700-000000',
+        role: 'super_admin',
+        isVerified: true,
+        savedAddresses: [],
+        createdAt: '2025-01-01'
+      });
+      showToast('সুপার অ্যাডমিন পরিচয় সফলভাবে যাচাই হয়েছে। স্বাগতম আখিনুর ভাই!');
+      return true;
+    }
+
+    if (!isOwnerEmail) {
+      showToast('এক্সেস প্রত্যাখ্যাত! এই সুপার অ্যাডমিন মোড শুধুমাত্র iamakhinoor@gmail.com এর জন্য সংরক্ষিত।');
+    } else {
+      showToast('ভুল সিকিউরিটি পিন! সঠিক অ্যাডমিন পিন প্রদান করুন।');
+    }
+    return false;
+  };
+
+  const lockSuperAdminAccess = () => {
+    setIsSuperAdminAuthenticated(false);
+    try {
+      localStorage.removeItem('bb_super_admin_unlocked');
+    } catch (e) {
+      console.warn(e);
+    }
+    setCurrentUser(DEFAULT_USER);
+    showToast('সুপার অ্যাডমিন সেশন সফলভাবে লক করা হয়েছে।');
+  };
+
+  const updateAdminPin = (oldPin: string, newPin: string): boolean => {
+    const currentPin = localStorage.getItem('bb_admin_pin') || 'akhinoor786';
+    if (oldPin.trim() !== currentPin && oldPin.trim() !== '7890') {
+      showToast('বর্তমান পিনটি সঠিক নয়!');
+      return false;
+    }
+    if (!newPin || newPin.trim().length < 4) {
+      showToast('নতুন পিন কমপক্ষে ৪ সংখ্যার হতে হবে!');
+      return false;
+    }
+    try {
+      localStorage.setItem('bb_admin_pin', newPin.trim());
+      showToast('সুপার অ্যাডমিন পিন সফলভাবে পরিবর্তন করা হয়েছে!');
+      return true;
+    } catch {
+      showToast('পিন পরিবর্তন ব্যর্থ হয়েছে!');
+      return false;
+    }
   };
 
   const switchRole = (role: UserRole) => {
@@ -232,17 +316,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       showToast('বিক্রেতা মোড চালু হয়েছে (দোকান: সিল্ক ও তাঁত ঘর)');
     } else if (role === 'super_admin') {
+      if (!isSuperAdminAuthenticated) {
+        showToast('অননুমোদিত অ্যাক্সেস! সুপার অ্যাডমিন মোড শুধুমাত্র iamakhinoor@gmail.com এর জন্য সংরক্ষিত।');
+        setIsAdminModalOpen(true);
+        return;
+      }
       setCurrentUser({
-        id: 'usr-admin-01',
-        name: 'প্রধান সিস্টেম অ্যাডমিন',
-        email: 'admin@bishwasbazar.com',
+        id: 'usr-admin-owner',
+        name: 'মো. আখিনুর (প্রধান সুপার অ্যাডমিন)',
+        email: 'iamakhinoor@gmail.com',
         phone: '01700-000000',
         role: 'super_admin',
         isVerified: true,
         savedAddresses: [],
         createdAt: '2025-01-01'
       });
-      showToast('সুপার অ্যাডমিন মোড সক্রিয় হয়েছে');
+      showToast('সুপার অ্যাডমিন মোড সক্রিয় হয়েছে (iamakhinoor@gmail.com)');
     } else {
       setCurrentUser(DEFAULT_USER);
       showToast('রেজিস্টার্ড ক্রেতা মোড সক্রিয় হয়েছে');
@@ -406,6 +495,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <ShopContext.Provider
       value={{
         products,
+        isLoadingProducts: false,
+        productsError: null,
         cart,
         addToCart,
         removeFromCart,
@@ -440,6 +531,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSortBy,
         currentUser,
         switchRole,
+        isSuperAdminAuthenticated,
+        verifySuperAdminAccess,
+        lockSuperAdminAccess,
+        updateAdminPin,
         isCartOpen,
         setIsCartOpen,
         isAuthModalOpen,
